@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ClaimServiceImpl implements ClaimService {
 
     private static final String DEFAULT_ACTOR = "SYSTEM";
@@ -57,7 +58,6 @@ public class ClaimServiceImpl implements ClaimService {
      * @return 클레임 정보
      */
     @Override
-    @Transactional(readOnly = true)
     public ClaimResponseDto getClaim(Long claimSeq) {
         ClaimResponseDto row = claimMapper.selectClaimByClaimSeq(claimSeq);
         if (row == null) {
