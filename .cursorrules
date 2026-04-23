@@ -1,0 +1,107 @@
+# ============================================================
+# DB Inc. 보험 계약 관리 시스템 — AI 코딩 규칙
+# 이 파일은 Cursor가 자동으로 읽는다. 수정하면 즉시 적용된다.
+# ============================================================
+
+# [프로젝트 개요]
+# AI가 이 프로젝트를 이해하는 첫 번째 정보다.
+이 프로젝트는 DB손해보험 계열사의 보험 계약 관리 시스템이다.
+Java 21 + Spring Boot 2.7 + MyBatis 3.5 + Oracle 19c 환경이다.
+
+# [기술 스택]
+언어: Java 21
+프레임워크: Spring Boot 2.7, MyBatis 3.5
+DB: Oracle 19c
+빌드: Maven
+테스트: JUnit5, Mockito
+형상관리: GitLab
+
+# [아키텍처]
+# AI가 레이어를 구분해서 코드를 만들도록 지시한다.
+Layered Architecture: Controller → Service → Repository(Mapper) → DB
+비즈니스 로직은 Service 레이어에만 위치한다
+Repository는 DB 접근만 담당한다 (비즈니스 로직 금지)
+
+# [도메인 용어]
+# 이게 없으면 AI가 임의로 변수명을 만든다.
+계약자(CONTRACTOR): 보험료를 납입하는 사람
+피보험자(INSURED): 보험의 대상이 되는 사람
+수익자(BENEFICIARY): 보험금을 받는 사람
+설계사(AGENT): 보험 계약을 중개하는 사람, TB_AGENT 테이블, PK=AGENT_SEQ
+보험증권(POLICY): 고유 POLICY_NO, PK는 POLICY_SEQ
+납입주기(PAYMENT_CYCLE): M(월납)/Q(분기납)/S(반납)/Y(연납)
+고객등급(GRADE_CD): BASIC/SILVER/GOLD/VIP
+클레임(CLAIM): 보험금 청구, PK=CLAIM_SEQ
+
+# [테이블 명명 규칙]
+테이블: TB_[엔티티] 대문자 스네이크 (TB_POLICY, TB_CUSTOMER)
+PK: [테이블약어]_SEQ
+공통 감사 컬럼: REG_DTM, UPD_DTM, REG_ID, UPD_ID
+
+# [Oracle 전용 규칙 — 위반 시 운영 장애 발생]
+# 이 규칙이 없으면 AI가 MySQL 문법을 생성한다. 가장 자주 틀리는 부분이다.
+날짜 함수: SYSDATE, ADD_MONTHS, TO_DATE (MySQL NOW(), DATE_ADD 절대 금지)
+페이징: ROW_NUMBER() OVER() (MySQL LIMIT 절대 금지)
+시퀀스: SEQ_[테이블약어].NEXTVAL (MySQL AUTO_INCREMENT 절대 금지)
+NULL 처리: NVL() (MySQL IFNULL() 금지)
+
+# [MyBatis 규칙]
+파라미터 바인딩: #{} 사용 필수
+${} 절대 금지 — SQL Injection 위험
+
+# [코드 품질 규칙]
+패키지: kr.co.dbinc.cursorstudy.[도메인].controller/service/repository/dto/exception
+응답: CommonResponse<T> wrapper 사용
+예외: [도메인]Exception extends RuntimeException
+로깅: SLF4J @Slf4j 사용 (System.out.println 금지)
+트랜잭션: Service에 @Transactional 적용
+null 처리: Optional 또는 명시적 null 체크 필수
+메서드 길이: 30줄 이내
+파라미터: 4개 초과 시 DTO로 묶기
+BigDecimal 비교: compareTo() 사용 (equals() 금지)
+
+# [상태 코드 — AI가 임의 값을 사용하지 않도록 명시]
+계약 상태(POLICY.STATUS_CD): ACTIVE → GRACE(유예, 납기 초과) → LAPSED(실효, 유예 30일 초과) / EXPIRED(만기)
+클레임 상태(CLAIM.CLAIM_STATUS_CD): RECEIPT(접수) → APPROVED(승인) 또는 REJECTED(거절)
+납입 상태(PAYMENT.PAYMENT_STATUS_CD): PENDING → PAID(납입완료) 또는 OVERDUE(미납)
+알림 발송 상태(NOTIFICATION.SEND_STATUS): PENDING → SENT(발송완료) 또는 FAILED(실패)
+알림 유형(NOTIFICATION.NOTI_TYPE): PAYMENT_DUE / CLAIM_APPROVED / RENEWAL_GUIDE
+
+# [핵심 비즈니스 규칙 — AI가 반드시 Service 레이어에 구현해야 하는 로직]
+# 클레임 규칙
+클레임 접수 시 POLICY에 CLAIM_STATUS_CD='RECEIPT'인 클레임이 존재하면 접수 불가 (중복 방지)
+클레임 접수 시 해당 시점 고객 GRADE_CD와 DISCOUNT_RATE를 TB_CLAIM에 스냅샷으로 저장한다
+클레임 APPROVED 전환 시 이메일 + SMS 알림을 TB_NOTIFICATION에 INSERT하고 발송한다
+
+# 고객 등급 할인율 fall-through 규칙
+등급 산정은 VIP → GOLD → SILVER → BASIC 순서로 상위부터 조건 충족 여부를 확인한다
+VIP: 가입 5년 이상 AND 무클레임 AND 연보험료 1000만원 이상 → 할인율 10%
+GOLD: 가입 3년 이상 AND 무클레임 → 할인율 5%
+SILVER: 가입 1년 이상 → 할인율 3%
+BASIC: 기본값 → 할인율 0%
+할인율은 TB_DISCOUNT_POLICY 테이블에서 조회하며, 하드코딩 금지
+
+# 납입 규칙
+납입 기한 7일 전: 자동 알림 발송 (배치)
+납입 기한 초과: 계약 STATUS_CD를 GRACE로 변경
+유예기간 30일 초과: 계약 STATUS_CD를 LAPSED로 변경
+
+# 계약 갱신 규칙
+만기 30일 전: RENEWAL_GUIDE 알림 발송 (배치)
+AUTO_RENEW_YN='Y' 계약은 만기 당일 자동 갱신 + 등급 재산정
+
+# [API 규칙]
+API 버전 prefix: /api/v1/ (모든 엔드포인트에 필수)
+에러 코드 네이밍: [도메인 약어]_[3자리 숫자] (예: CLAIM_001, POLICY_001, PAYM_001)
+응답 형식: { "success": true/false, "data": {}, "timestamp": "ISO-8601" }
+실패 응답 추가 필드: "errorCode", "message"
+
+# [금액 처리 규칙]
+모든 금액 필드 Java 타입: BigDecimal (double/float 절대 금지)
+BigDecimal 비교: compareTo() 사용 (equals() 금지) — 이미 규정됨
+DB 컬럼 타입: NUMBER(15,2) — 소수점 2자리
+
+# [AI 응답 규칙]
+코드 생성 전 변경될 파일 목록을 먼저 알려준다
+Oracle 문법만 사용한다 (MySQL 문법 사용 시 즉시 수정 요청)
+기존 코드 수정 시 수정 이유를 주석으로 남긴다

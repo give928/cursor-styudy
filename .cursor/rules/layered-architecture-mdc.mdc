@@ -1,0 +1,17 @@
+---
+globs: **/*.java
+alwaysApply: false
+---
+# [Spring Boot Layered Architecture]
+# 프로젝트의 계층 구조와 의존성 원칙을 정의한다.
+
+- **흐름**: Controller -> Service -> Mapper(Repository) 단방향 흐름을 준수한다.
+- **Controller**:
+  - 비즈니스 로직 포함 금지. 오직 요청 수신과 유효성 검사(JSR-303)만 수행.
+  - 응답은 항상 `CommonResponse<T>`로 래핑한다.
+- **Service**:
+  - 실질적인 보험 도메인 로직이 위치하는 곳.
+  - `@Transactional` 어노테이션을 명시적으로 사용한다.
+- **Mapper**:
+  - DB 접근 외의 로직은 포함하지 않는다.
+  - 인터페이스 명칭은 `~Mapper`로 통일한다.

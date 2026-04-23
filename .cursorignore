@@ -1,0 +1,17 @@
+# 운영 환경 설정 (API 키, DB 접속 정보 포함)
+src/main/resources/application-prod.yml
+src/main/resources/application-secret.yml
+
+# 인증서 및 키 파일
+*.key
+*.pem
+*.p12
+
+# 빌드 산출물 (소스 아님)
+build/
+target/
+.gradle/
+
+# 로그 파일
+*.log
+logs/

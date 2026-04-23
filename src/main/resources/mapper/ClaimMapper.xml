@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.dbinc.cursorstudy.domain.claim.repository.ClaimMapper">
+
+    <select id="selectPolicyWithGrade" resultType="kr.co.dbinc.cursorstudy.domain.claim.repository.PolicyWithGradeRow">
+        SELECT p.POLICY_SEQ AS policySeq,
+               p.CUST_SEQ   AS custSeq,
+               c.GRADE_CD   AS gradeCd
+        FROM TB_POLICY p
+                 JOIN TB_CUSTOMER c ON c.CUST_SEQ = p.CUST_SEQ
+        WHERE p.POLICY_SEQ = #{policySeq}
+    </select>
+
+    <!-- Oracle: NEXTVAL/SYSDATE/NVL — MySQL 문법 사용 금지 -->
+    <!-- selectKey order=BEFORE: NEXTVAL을 먼저 채운 뒤 #{claimSeq}로 재사용해 CURRVAL 경합을 방지한다 -->
+    <insert id="insertClaim" parameterType="kr.co.dbinc.cursorstudy.domain.claim.repository.ClaimInsertParam">
+        <selectKey keyProperty="claimSeq" resultType="long" order="BEFORE">
+            SELECT SEQ_CLAIM.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_CLAIM (
+            CLAIM_SEQ,
+            CLAIM_NO,
+            POLICY_SEQ,
+            CLAIM_TYPE,
+            STATUS_CD,
+            ACCIDENT_DTM,
+            CLAIM_AMT,
+            DISCOUNT_RATE,
+            GRADE_CD,
+            REG_ID,
+            UPD_ID
+        ) VALUES (
+            #{claimSeq},
+            'CLM' || LPAD(TO_CHAR(#{claimSeq}), 12, '0'),
+            #{policySeq},
+            #{claimType},
+            NVL(#{statusCd}, 'RECEIPT'),
+            #{accidentDtm},
+            #{claimAmt},
+            #{discountRate},
+            #{gradeCd},
+            #{regId},
+            #{updId}
+        )
+    </insert>
+
+    <insert id="insertAuditLog" parameterType="kr.co.dbinc.cursorstudy.domain.claim.repository.AuditLogInsertParam">
+        INSERT INTO TB_AUDIT_LOG (
+            LOG_SEQ,
+            ACTION_CD,
+            TARGET_TABLE,
+            TARGET_SEQ,
+            BEFORE_VALUE,
+            AFTER_VALUE,
+            USER_ID,
+            CLIENT_IP,
+            REG_DTM,
+            REG_ID,
+            UPD_DTM,
+            UPD_ID
+        ) VALUES (
+            SEQ_AUDIT_LOG.NEXTVAL,
+            #{actionCd},
+            #{targetTable},
+            #{targetSeq},
+            #{beforeValue,jdbcType=CLOB},
+            #{afterValue,jdbcType=CLOB},
+            #{userId},
+            #{clientIp,jdbcType=VARCHAR},
+            SYSDATE,
+            #{regId},
+            SYSDATE,
+            #{updId}
+        )
+    </insert>
+
+    <select id="selectClaimByClaimSeq" resultType="kr.co.dbinc.cursorstudy.domain.claim.dto.ClaimResponseDto">
+        SELECT CLAIM_SEQ      AS claimSeq,
+               CLAIM_NO       AS claimNo,
+               POLICY_SEQ     AS policySeq,
+               CLAIM_TYPE     AS claimType,
+               STATUS_CD      AS statusCd,
+               ACCIDENT_DTM   AS accidentDtm,
+               RECEIPT_DTM    AS receiptDtm,
+               CLAIM_AMT      AS claimAmt,
+               APPROVED_AMT   AS approvedAmt,
+               DISCOUNT_RATE  AS discountRate,
+               GRADE_CD       AS gradeCd,
+               REJECT_REASON  AS rejectReason
+        FROM TB_CLAIM
+        WHERE CLAIM_SEQ = #{claimSeq}
+    </select>
+</mapper>

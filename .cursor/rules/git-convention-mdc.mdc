@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+# [Git Commit & Documentation]
+- **Commit Message**: `[FEAT]`, `[FIX]`, `[CHORE]` 등의 접두사를 사용하고 한글로 작성한다.
+- **JavaDoc**: 모든 Public 메서드에는 상단에 메서드 역할, 파라미터, 리턴값에 대한 JavaDoc 주석을 생성한다.
+- **Logging**: `System.out.println`은 절대 사용하지 않으며, `@Slf4j`를 이용한 로그를 남긴
