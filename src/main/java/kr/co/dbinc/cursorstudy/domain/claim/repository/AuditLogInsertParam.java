@@ -1,11 +1,13 @@
 package kr.co.dbinc.cursorstudy.domain.claim.repository;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
 /**
  * {@code TB_AUDIT_LOG} INSERT 파라미터.
  */
-@Data
+@Builder
+@Getter
 public class AuditLogInsertParam {
 
     private String actionCd;

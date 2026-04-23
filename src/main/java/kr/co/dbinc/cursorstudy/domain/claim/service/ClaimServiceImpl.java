@@ -85,36 +85,38 @@ public class ClaimServiceImpl implements ClaimService {
     private ClaimInsertParam buildInsertParam(ClaimRequestDto request,
                                               PolicyWithGradeRow policyRow,
                                               BigDecimal discountRate) {
-        String actor = Optional.ofNullable(request.getActorId()).orElse(DEFAULT_ACTOR);
-        ClaimInsertParam param = new ClaimInsertParam();
-        param.setPolicySeq(request.getPolicySeq());
-        param.setClaimType(request.getClaimType());
-        param.setStatusCd("RECEIPT");
-        param.setAccidentDtm(request.getAccidentDtm());
-        param.setClaimAmt(request.getClaimAmt());
-        param.setDiscountRate(discountRate);
-        param.setGradeCd(policyRow.getGradeCd());
-        param.setRegId(actor);
-        param.setUpdId(actor);
-        return param;
+        String actorId = request.getActorId();
+        String actor = Optional.ofNullable(actorId).orElse(DEFAULT_ACTOR);
+        String gradeCd = policyRow.getGradeCd();
+        return ClaimInsertParam.builder()
+                .policySeq(request.getPolicySeq())
+                .claimType(request.getClaimType())
+                .statusCd("RECEIPT")
+                .accidentDtm(request.getAccidentDtm())
+                .claimAmt(request.getClaimAmt())
+                .discountRate(discountRate)
+                .gradeCd(gradeCd)
+                .regId(actor)
+                .updId(actor)
+                .build();
     }
 
     /**
      * INSERT 파라미터로 감사 로그 파라미터를 조립한다.
      */
-    private AuditLogInsertParam buildAuditLog(ClaimInsertParam param, String actorId) {
+    private AuditLogInsertParam buildAuditLog(ClaimInsertParam insertParam, String actorId) {
         String actor = Optional.ofNullable(actorId).orElse(DEFAULT_ACTOR);
-        AuditLogInsertParam audit = new AuditLogInsertParam();
-        audit.setActionCd("INSERT");
-        audit.setTargetTable("TB_CLAIM");
-        audit.setTargetSeq(param.getClaimSeq());
-        audit.setBeforeValue(null);
-        audit.setAfterValue(buildAfterAuditPayload(param));
-        audit.setUserId(actor);
-        audit.setClientIp(null);
-        audit.setRegId(actor);
-        audit.setUpdId(actor);
-        return audit;
+        return AuditLogInsertParam.builder()
+                .actionCd("INSERT")
+                .targetTable("TB_CLAIM")
+                .targetSeq(insertParam.getClaimSeq())
+                .beforeValue(null)
+                .afterValue(buildAfterAuditPayload(insertParam))
+                .userId(actor)
+                .clientIp(null)
+                .regId(actor)
+                .updId(actor)
+                .build();
     }
 
     /**
@@ -126,18 +128,24 @@ public class ClaimServiceImpl implements ClaimService {
             throw new IllegalStateException("클레임 저장 후 조회 실패. claimSeq=" + claimSeq);
         }
         // 등급·할인율은 민감 정보이므로 DEBUG 레벨로만 기록한다
+        Long savedClaimSeq = saved.getClaimSeq();
+        Long savedPolicySeq = saved.getPolicySeq();
+        String savedGradeCd = saved.getGradeCd();
+        BigDecimal savedDiscountRate = saved.getDiscountRate();
         log.debug("Claim registered claimSeq={}, policySeq={}, gradeCd={}, discountRate={}",
-                saved.getClaimSeq(), saved.getPolicySeq(), saved.getGradeCd(), saved.getDiscountRate());
+                savedClaimSeq, savedPolicySeq, savedGradeCd, savedDiscountRate);
         return saved;
     }
 
-    private String buildAfterAuditPayload(ClaimInsertParam param) {
+    private String buildAfterAuditPayload(ClaimInsertParam insertParam) {
+        Long claimSeq = insertParam.getClaimSeq();
+        Long policySeq = insertParam.getPolicySeq();
+        String statusCd = Optional.ofNullable(insertParam.getStatusCd()).orElse("RECEIPT");
+        String gradeCd = Optional.ofNullable(insertParam.getGradeCd()).orElse("");
+        BigDecimal discountRate = insertParam.getDiscountRate();
+        String discountRateStr = discountRate == null ? "0" : discountRate.toPlainString();
         return String.format(
                 "{\"claimSeq\":%d,\"policySeq\":%d,\"statusCd\":\"%s\",\"gradeCd\":\"%s\",\"discountRate\":%s}",
-                param.getClaimSeq(),
-                param.getPolicySeq(),
-                Optional.ofNullable(param.getStatusCd()).orElse("RECEIPT"),
-                Optional.ofNullable(param.getGradeCd()).orElse(""),
-                param.getDiscountRate() == null ? "0" : param.getDiscountRate().toPlainString());
+                claimSeq, policySeq, statusCd, gradeCd, discountRateStr);
     }
 }
