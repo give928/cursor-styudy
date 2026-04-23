@@ -12,9 +12,9 @@ Java 21 + Spring Boot 2.7 + MyBatis 3.5 + Oracle 19c 환경이다.
 언어: Java 21
 프레임워크: Spring Boot 2.7, MyBatis 3.5
 DB: Oracle 19c
-빌드: Maven
+빌드: Gradle
 테스트: JUnit5, Mockito
-형상관리: GitLab
+형상관리: Github
 
 # [아키텍처]
 # AI가 레이어를 구분해서 코드를 만들도록 지시한다.
@@ -43,21 +43,24 @@ PK: [테이블약어]_SEQ
 날짜 함수: SYSDATE, ADD_MONTHS, TO_DATE (MySQL NOW(), DATE_ADD 절대 금지)
 페이징: ROW_NUMBER() OVER() (MySQL LIMIT 절대 금지)
 시퀀스: SEQ_[테이블약어].NEXTVAL (MySQL AUTO_INCREMENT 절대 금지)
+시퀀스 채번: <selectKey keyProperty="pkCol" resultType="long" order="BEFORE"> SELECT SEQ_XXX.NEXTVAL FROM DUAL </selectKey> 로 PK를 먼저 채운 뒤 #{pkCol}로 재사용한다. VALUES 절에서 CURRVAL 직접 참조 금지 — 동시 세션 경합 시 다른 세션의 값을 읽을 위험이 있다
 NULL 처리: NVL() (MySQL IFNULL() 금지)
 
 # [MyBatis 규칙]
 파라미터 바인딩: #{} 사용 필수
 ${} 절대 금지 — SQL Injection 위험
+@MapperScan 범위: 반드시 *.repository 패키지로 한정한다 (예: kr.co.dbinc.cursorstudy.domain.claim.repository). 상위 패키지 전체 스캔 금지 — Service 인터페이스가 MyBatis 매퍼로 오등록되어 BindingException이 발생한다
 
 # [코드 품질 규칙]
 패키지: kr.co.dbinc.cursorstudy.[도메인].controller/service/repository/dto/exception
 응답: CommonResponse<T> wrapper 사용
 예외: [도메인]Exception extends RuntimeException
 로깅: SLF4J @Slf4j 사용 (System.out.println 금지)
-트랜잭션: Service에 @Transactional 적용
+로그 레벨: 고객 등급(GRADE_CD)·할인율(DISCOUNT_RATE)·청구 금액 등 민감 비즈니스 정보는 DEBUG 레벨로만 기록한다. INFO 레벨 이상에서 평문 노출 금지
+트랜잭션: Service에 @Transactional 적용(클래스 레벨은 readonly=true, insert/update/delete 메서드는 readonly=false)
 null 처리: Optional 또는 명시적 null 체크 필수
 메서드 길이: 30줄 이내
-파라미터: 4개 초과 시 DTO로 묶기
+파라미터: 3개 초과 시 DTO로 묶기
 BigDecimal 비교: compareTo() 사용 (equals() 금지)
 
 # [상태 코드 — AI가 임의 값을 사용하지 않도록 명시]
