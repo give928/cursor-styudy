@@ -96,8 +96,10 @@ AUTO_RENEW_YN='Y' 계약은 만기 당일 자동 갱신 + 등급 재산정
 # [API 규칙]
 API 버전 prefix: /api/v1/ (모든 엔드포인트에 필수)
 에러 코드 네이밍: [도메인 약어]_[3자리 숫자] (예: CLAIM_001, POLICY_001, PAYM_001)
-응답 형식: { "success": true/false, "data": {}, "timestamp": "ISO-8601" }
-실패 응답 추가 필드: "errorCode", "message"
+성공 응답: CommonResponse<T> 사용 — { "success": true, "data": {}, "timestamp": "ISO-8601" }
+실패 응답: RFC 7807 ProblemDetail 사용 — CommonResponse의 fail()은 사용 금지
+실패 응답 형식: { "type": "https://dbinc.co.kr/errors/CLAIM_001", "title": "...", "status": 404, "detail": "...", "instance": "/api/v1/...", "errorCode": "CLAIM_001", "timestamp": "ISO-8601" }
+Spring Boot 3 업그레이드 시 org.springframework.http.ProblemDetail 로 대체할 것
 
 # [금액 처리 규칙]
 모든 금액 필드 Java 타입: BigDecimal (double/float 절대 금지)
