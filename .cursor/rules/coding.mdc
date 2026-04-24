@@ -1,6 +1,6 @@
 ---
 globs: *.java, *.xml
-alwaysApply: false
+alwaysApply: true
 description: DB Inc. 김주호 코딩 룰
 ---
 

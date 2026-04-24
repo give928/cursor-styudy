@@ -52,6 +52,7 @@ ${} 절대 금지 — SQL Injection 위험
 @MapperScan 범위: 반드시 *.repository 패키지로 한정한다 (예: kr.co.dbinc.cursorstudy.domain.claim.repository). 상위 패키지 전체 스캔 금지 — Service 인터페이스가 MyBatis 매퍼로 오등록되어 BindingException이 발생한다
 
 # [코드 품질 규칙]
+**`.cursor/rules/coding.mdc` 코딩 규칙 엄수**
 패키지: kr.co.dbinc.cursorstudy.[도메인].controller/service/repository/dto/exception
 응답: CommonResponse<T> wrapper 사용
 예외: [도메인]Exception extends RuntimeException
