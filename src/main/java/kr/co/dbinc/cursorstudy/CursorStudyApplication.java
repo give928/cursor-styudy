@@ -8,7 +8,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 애플리케이션 진입점.
  */
 @SpringBootApplication
-@MapperScan("kr.co.dbinc.cursorstudy.domain.claim.repository")
+@MapperScan({
+        "kr.co.dbinc.cursorstudy.domain.claim.repository",
+        "kr.co.dbinc.cursorstudy.domain.premium.repository"
+})
 public class CursorStudyApplication {
 
     /**

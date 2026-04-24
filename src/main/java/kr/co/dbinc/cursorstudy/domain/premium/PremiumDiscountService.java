@@ -4,15 +4,16 @@ import java.math.BigDecimal;
 
 /**
  * 보험료 할인율 계산 포트.
- * <p>실제 정책(fall-through, TB_DISCOUNT_POLICY 연동 등)은 후속 세션에서 구현한다.</p>
+ * <p>VIP → GOLD → SILVER → BASIC 순서로 fall-through 방식으로 할인율을 결정한다.</p>
  */
 public interface PremiumDiscountService {
 
     /**
-     * 고객 등급 코드를 기준으로 할인율을 계산한다.
+     * 고객·계약 정보를 기반으로 할인율을 계산한다.
      *
-     * @param gradeCd {@code TB_CUSTOMER.GRADE_CD}
-     * @return 할인율(예: 0.05는 5%)
+     * @param customerSequence 고객 PK ({@code TB_CUSTOMER.CUST_SEQ})
+     * @param policySequence   계약 PK ({@code TB_POLICY.POLICY_SEQ})
+     * @return 할인율(예: 0.05는 5%); null 입력 시 {@link java.math.BigDecimal#ZERO}
      */
-    BigDecimal calculateDiscountRate(String gradeCd);
+    BigDecimal calculateDiscountRate(Long customerSequence, Long policySequence);
 }

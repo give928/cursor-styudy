@@ -8,8 +8,10 @@ import kr.co.dbinc.cursorstudy.domain.claim.repository.ClaimInsertParam;
 import kr.co.dbinc.cursorstudy.domain.claim.repository.ClaimMapper;
 import kr.co.dbinc.cursorstudy.domain.claim.repository.PolicyWithGradeRow;
 import kr.co.dbinc.cursorstudy.domain.premium.PremiumDiscountService;
+
 import java.math.BigDecimal;
 import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,9 +42,9 @@ public class ClaimServiceImpl implements ClaimService {
     public ClaimResponseDto registerClaim(ClaimRequestDto request) {
         PolicyWithGradeRow policyRow = fetchPolicyOrThrow(request.getPolicySeq());
 
-        // 세션6: TB_DISCOUNT_POLICY/fall-through 반영 후 아래 호출로 할인율 산정 예정
-        // BigDecimal discountRate = premiumDiscountService.calculateDiscountRate(policyRow.getGradeCd());
-        BigDecimal discountRate = BigDecimal.ZERO;
+        Long customerSequence = policyRow.getCustSeq();
+        Long policySequence = policyRow.getPolicySeq();
+        BigDecimal discountRate = premiumDiscountService.calculateDiscountRate(customerSequence, policySequence);
 
         ClaimInsertParam insertParam = buildInsertParam(request, policyRow, discountRate);
         claimMapper.insertClaim(insertParam);

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.dbinc.cursorstudy.domain.premium.repository.PremiumMapper">
+
+    <!-- Oracle: SYSDATE/NVL/#{} 사용 — MySQL 문법 금지 -->
+
+    <select id="selectCustomer"
+            resultType="kr.co.dbinc.cursorstudy.domain.premium.repository.CustomerRow">
+        SELECT CUST_SEQ AS custSeq
+        FROM TB_CUSTOMER
+        WHERE CUST_SEQ = #{custSeq}
+    </select>
+
+    <select id="selectPolicyForDiscount"
+            resultType="kr.co.dbinc.cursorstudy.domain.premium.repository.PolicyDiscountRow">
+        SELECT CONTRACT_DTM   AS contractDtm,
+               ANNUAL_PREMIUM AS annualPremium
+        FROM TB_POLICY
+        WHERE POLICY_SEQ = #{policySeq}
+    </select>
+
+    <select id="countClaimsByPolicySeq" resultType="int">
+        SELECT COUNT(1)
+        FROM TB_CLAIM
+        WHERE POLICY_SEQ = #{policySeq}
+    </select>
+
+    <!-- GradeCode enum: MyBatis EnumTypeHandler가 .name()을 호출해 "VIP"/"GOLD" 등 문자열로 바인딩한다 -->
+    <select id="selectDiscountPolicy"
+            resultType="kr.co.dbinc.cursorstudy.domain.premium.repository.DiscountPolicyRow">
+        SELECT DISCOUNT_RATE AS discountRate
+        FROM TB_DISCOUNT_POLICY
+        WHERE GRADE_CD = #{gradeCd}
+          AND APPLY_START_DTM &lt;= SYSDATE
+          AND NVL(APPLY_END_DTM, SYSDATE) &gt;= SYSDATE
+    </select>
+
+</mapper>
